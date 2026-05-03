@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smile Options</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#13192b; color:#dde6ff; font-family:'Segoe UI',system-ui,sans-serif; padding:24px; }
+h2 { color:#ffd84d; font-size:20px; margin-bottom:4px; }
+.subtitle { color:#7a9abf; font-size:13px; margin-bottom:24px; }
+.row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+.panel { background:#0e1422; border:2px solid #1e2a40; border-radius:12px; padding:16px; display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer; transition:border-color 0.15s; }
+.panel:hover { border-color:#4fc3d9; }
+.panel.selected { border-color:#ffd84d; background:#1a2236; }
+.panel h3 { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#4fc3d9; text-align:center; }
+canvas { border-radius:8px; background:#1b2640; }
+.desc { font-size:12px; color:#6a8aaa; text-align:center; line-height:1.5; }
+.q { text-align:center; color:#7a9abf; font-size:13px; margin-top:4px; }
+.q strong { color:#ffd84d; }
+</style>
+</head>
+<body>
+<h2>Which smile looks right?</h2>
+<p class="subtitle">Four options — all using the same face shape. Click one, then tell me in the terminal.</p>
+
+<div class="row">
+  <div class="panel" data-choice="a" onclick="pick(this)">
+    <h3>A — Pixel Staircase</h3>
+    <canvas id="cA" width="120" height="120"></canvas>
+    <p class="desc">Classic pixel-art stepped curve. Corners high, centre low.</p>
+  </div>
+  <div class="panel" data-choice="b" onclick="pick(this)">
+    <h3>B — Arc Stroke</h3>
+    <canvas id="cB" width="120" height="120"></canvas>
+    <p class="desc">Thick curved line drawn with an arc. Smooth and round.</p>
+  </div>
+  <div class="panel" data-choice="c" onclick="pick(this)">
+    <h3>C — Filled Crescent</h3>
+    <canvas id="cC" width="120" height="120"></canvas>
+    <p class="desc">Filled banana shape using bezier curves. More body to the smile.</p>
+  </div>
+  <div class="panel" data-choice="d" onclick="pick(this)">
+    <h3>D — Mini Happy</h3>
+    <canvas id="cD" width="120" height="120"></canvas>
+    <p class="desc">Small version of the full happy smile — still shows a sliver of teeth.</p>
+  </div>
+</div>
+
+<p class="q"><strong>Click the one that reads most like a smile, then reply in the terminal.</strong></p>
+
+<script>
+const PAO = {
+  skin:'#c9855f', skinLight:'#ffc493', cheek:'#e98f7d',
+  hairDark:'#2b1a12', hair:'#5a321d', hairLight:'#a5673c',
+};
+const MOUTH_DARK = '#5a1a1e';
+
+function drawFace(ctx, smileFn) {
+  ctx.clearRect(0,0,120,120);
+  const cx = 58, cy = 28, s = 1.3;
+  ctx.save();
+  ctx.scale(s, s);
+  const hx = cx/s, hy = cy/s;
+
+  // Hair
+  ctx.fillStyle = PAO.hairDark; ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.ellipse(hx, hy-4, 22, 11, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx-16, hy+6, 7, 14, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = PAO.hair;
+  ctx.beginPath(); ctx.ellipse(hx, hy-2, 19, 9, 0, 0, Math.PI*2); ctx.fill();
+
+  // Skin face
+  ctx.fillStyle = PAO.skin;
+  ctx.beginPath();
+  const r=4; const x=hx-15, y=hy+2, w=28, h=24;
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath(); ctx.fill();
+  // Ear
+  ctx.beginPath(); ctx.ellipse(hx+15, hy+12, 4, 6, 0, 0, Math.PI*2); ctx.fill();
+  // Face highlight
+  ctx.fillStyle = PAO.skinLight; ctx.fillRect(hx-10, hy+4, 16, 6);
+
+  // Brows — soft, same height (not angry)
+  ctx.fillStyle = PAO.hairDark;
+  ctx.fillRect(hx-13, hy+10, 9, 2); // left
+  ctx.fillRect(hx-1, hy+10, 10, 2); // right — same level
+
+  // Eyes
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); const er=2; const ex=hx-12, ey=hy+13;
+  ctx.moveTo(ex+er,ey); ctx.lineTo(ex+7-er,ey); ctx.arcTo(ex+7,ey,ex+7,ey+er,er);
+  ctx.lineTo(ex+7,ey+5-er); ctx.arcTo(ex+7,ey+5,ex+7-er,ey+5,er);
+  ctx.lineTo(ex+er,ey+5); ctx.arcTo(ex,ey+5,ex,ey+5-er,er);
+  ctx.lineTo(ex,ey+er); ctx.arcTo(ex,ey,ex+er,ey,er); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); const ex2=hx; const ey2=hy+13;
+  ctx.moveTo(ex2+er,ey2); ctx.lineTo(ex2+8-er,ey2); ctx.arcTo(ex2+8,ey2,ex2+8,ey2+er,er);
+  ctx.lineTo(ex2+8,ey2+5-er); ctx.arcTo(ex2+8,ey2+5,ex2+8-er,ey2+5,er);
+  ctx.lineTo(ex2+er,ey2+5); ctx.arcTo(ex2,ey2+5,ex2,ey2+5-er,er);
+  ctx.lineTo(ex2,ey2+er); ctx.arcTo(ex2,ey2,ex2+er,ey2,er); ctx.closePath(); ctx.fill();
+
+  // Pupils
+  ctx.fillStyle = '#17120f';
+  ctx.beginPath(); ctx.arc(hx-8, hy+16, 2.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx+4, hy+16, 2.5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(hx-10, hy+13, 2, 2); ctx.fillRect(hx+2, hy+13, 2, 2);
+
+  // Lashes
+  ctx.strokeStyle = PAO.hairDark; ctx.lineWidth = 1; ctx.globalAlpha = 0.9;
+  [[-13,-10,-7],[0,3,7,10]].forEach((group, gi) => {
+    group.forEach(ox => {
+      ctx.beginPath(); ctx.moveTo(hx+ox, hy+13); ctx.lineTo(hx+ox+(gi?0:-1), hy+11); ctx.stroke();
+    });
+  });
+  ctx.globalAlpha = 1;
+
+  // Nose
+  ctx.fillStyle = PAO.skinLight; ctx.globalAlpha = 0.7;
+  ctx.fillRect(hx-1, hy+18, 3, 2); ctx.globalAlpha = 1;
+
+  // Cheeks
+  ctx.fillStyle = PAO.cheek; ctx.globalAlpha = 0.4;
+  ctx.beginPath(); ctx.ellipse(hx-13, hy+21, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx+11, hy+21, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Smile — delegated to smileFn
+  smileFn(ctx, hx, hy);
+  ctx.restore();
+}
+
+// ── Smile option A: pixel staircase ───────────────────────────────────────
+function smileA(ctx, hx, hy) {
+  ctx.fillStyle = MOUTH_DARK; ctx.globalAlpha = 1;
+  // Steps: corners high, each inner step 1px lower, centre lowest
+  ctx.fillRect(hx-8, hy+22, 3, 2);  // left corner
+  ctx.fillRect(hx-5, hy+23, 3, 2);  // left-inner
+  ctx.fillRect(hx-2, hy+24, 6, 2);  // centre bottom
+  ctx.fillRect(hx+4, hy+23, 3, 2);  // right-inner
+  ctx.fillRect(hx+7, hy+22, 3, 2);  // right corner
+}
+
+// ── Smile option B: arc stroke ─────────────────────────────────────────────
+function smileB(ctx, hx, hy) {
+  // Arc: centre ABOVE mouth, draw the bottom portion → smile curve
+  // We want corners at (hx±8, hy+22), bottom at (hx, hy+27)
+  // Circle centre: r=?, cy_c such that cy_c+r = hy+27 and cy_c + r*sin(θ) = hy+22
+  // Use r=10: cy_c = hy+17. At corners: hy+17+10*sin(θ)=hy+22 → sin(θ)=0.5 → θ=π/6
+  // x corners: hx ± 10*cos(π/6) = hx ± 8.66 ✓
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = MOUTH_DARK;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(hx, hy+17, 10, Math.PI/6, Math.PI - Math.PI/6); // bottom portion
+  ctx.stroke();
+}
+
+// ── Smile option C: filled crescent via bezier ────────────────────────────
+function smileC(ctx, hx, hy) {
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = MOUTH_DARK;
+  ctx.beginPath();
+  // outer curve: corners at y=hy+22, dips to hy+28 at centre
+  ctx.moveTo(hx - 8, hy + 22);
+  ctx.quadraticCurveTo(hx + 1, hy + 30, hx + 9, hy + 22);
+  // inner curve back: shallower, creating thickness
+  ctx.quadraticCurveTo(hx + 1, hy + 26, hx - 8, hy + 22);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// ── Smile option D: mini happy (teeth sliver) ─────────────────────────────
+function smileD(ctx, hx, hy) {
+  ctx.globalAlpha = 1;
+  // Outer shape
+  ctx.fillStyle = MOUTH_DARK;
+  ctx.beginPath();
+  const r=3; const mx=hx-7, my=hy+22, mw=15, mh=6;
+  ctx.moveTo(mx+r,my); ctx.lineTo(mx+mw-r,my); ctx.arcTo(mx+mw,my,mx+mw,my+r,r);
+  ctx.lineTo(mx+mw,my+mh-r); ctx.arcTo(mx+mw,my+mh,mx+mw-r,my+mh,r);
+  ctx.lineTo(mx+r,my+mh); ctx.arcTo(mx,my+mh,mx,my+mh-r,r);
+  ctx.lineTo(mx,my+r); ctx.arcTo(mx,my,mx+r,my,r); ctx.closePath(); ctx.fill();
+  // Teeth sliver (white)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(hx-5, hy+22, 11, 2);
+  // Small lip highlight
+  ctx.fillStyle = '#7a2530'; ctx.globalAlpha = 0.5;
+  ctx.fillRect(hx-3, hy+22, 7, 1);
+  ctx.globalAlpha = 1;
+}
+
+drawFace(document.getElementById('cA').getContext('2d'), smileA);
+drawFace(document.getElementById('cB').getContext('2d'), smileB);
+drawFace(document.getElementById('cC').getContext('2d'), smileC);
+drawFace(document.getElementById('cD').getContext('2d'), smileD);
+
+function pick(el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+</script>
+</body>
+</html>

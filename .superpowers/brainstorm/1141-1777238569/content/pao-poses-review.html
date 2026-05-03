@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pao Sprite Review</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #13192b;
+  color: #dde6ff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  padding: 24px;
+  min-height: 100vh;
+}
+h2 { color: #ffd84d; font-size: 22px; margin-bottom: 6px; }
+.subtitle { color: #7a9abf; font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
+
+.poses-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  background: #0e1422;
+  border: 1px solid #1e2a40;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 28px;
+}
+.pose-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.pose-label {
+  font-size: 10px;
+  color: #557fa8;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 600;
+}
+canvas {
+  border-radius: 6px;
+  background: #1e2d44;
+}
+h3 { color: #ffd84d; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 680px;
+  margin: 0 auto 20px;
+}
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: #1a2236;
+  border: 2px solid #252f47;
+  border-radius: 10px;
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.option:hover { border-color: #4fc3d9; }
+.option.selected { border-color: #ffd84d; background: #212d48; }
+.opt-letter {
+  font-weight: 800;
+  color: #4fc3d9;
+  font-size: 20px;
+  min-width: 26px;
+  margin-top: 1px;
+}
+.opt-title { color: #dde6ff; font-weight: 600; font-size: 15px; margin-bottom: 3px; }
+.opt-desc { color: #7a9abf; font-size: 13px; line-height: 1.55; }
+
+.note {
+  text-align: center;
+  color: #4a6080;
+  font-size: 12px;
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<h2>Pao Sprite — All 9 Current Poses</h2>
+<p class="subtitle">Rendered directly from the code in PaoSpriteFactory.ts. Select what you want to improve.</p>
+
+<div class="poses-grid" id="posesGrid"></div>
+
+<h3>What do you want to improve? (select all that apply)</h3>
+<div class="options-list" id="optionsList">
+  <div class="option" data-choice="accuracy" onclick="toggleOpt(this)">
+    <div class="opt-letter">A</div>
+    <div>
+      <div class="opt-title">Visual accuracy to character sheet</div>
+      <div class="opt-desc">Proportions, stance confidence, braid length, and overall silhouette match the reference better.</div>
+    </div>
+  </div>
+  <div class="option" data-choice="power" onclick="toggleOpt(this)">
+    <div class="opt-letter">B</div>
+    <div>
+      <div class="opt-title">Power pose — Basketball Toss</div>
+      <div class="opt-desc">Current power pose is just an outstretched arm. Needs a proper overhand throwing motion and a basketball object visible in the hand.</div>
+    </div>
+  </div>
+  <div class="option" data-choice="animation" onclick="toggleOpt(this)">
+    <div class="opt-letter">C</div>
+    <div>
+      <div class="opt-title">Smoother animation frames</div>
+      <div class="opt-desc">Run cycle has 2 frames and can feel choppy. A 3rd run frame or improved in-between would smooth it out significantly.</div>
+    </div>
+  </div>
+  <div class="option" data-choice="expressions" onclick="toggleOpt(this)">
+    <div class="opt-letter">D</div>
+    <div>
+      <div class="opt-title">Distinct face expressions per pose</div>
+      <div class="opt-desc">The character sheet shows Happy, Determined, and Confident expressions. Most poses currently share the same neutral face.</div>
+    </div>
+  </div>
+</div>
+<p class="note">Click any option to select it. Click again to deselect. Then reply in the terminal.</p>
+
+<script>
+// ─── Palette ───────────────────────────────────────────────────────────────
+const PAO = {
+  outline:    '#241713', skin:       '#c9855f', skinLight: '#ffc493',
+  cheek:      '#e98f7d', hairDark:   '#2b1a12', hair:      '#5a321d',
+  hairLight:  '#a5673c', shirtDark:  '#193829', shirt:     '#28573f',
+  shirtLight: '#3f7656', denimDark:  '#2f536f', denim:     '#557fa8',
+  denimLight: '#8aaaca', belt:       '#70482c', shoe:      '#143d33',
+  sole:       '#f4ead0',
+};
+const C = {
+  aqua: '#4fc3d9', cream: '#f4e4c8', gold: '#f6c35b',
+  star: '#ffd84d', glow: '#fff3b0',
+};
+
+function hexStr(n) { return '#' + n.toString(16).padStart(6, '0'); }
+
+// ─── Mini Phaser-like Graphics wrapper for Canvas 2D ──────────────────────
+class G {
+  constructor(ctx) {
+    this.c = ctx;
+    this.fc = '#000'; this.fa = 1;
+    this.sc = '#000'; this.sa = 1; this.sw = 1;
+  }
+  save()    { this.c.save(); }
+  restore() { this.c.restore(); }
+  scaleCanvas(sx, sy) { this.c.scale(sx, sy); }
+
+  fillStyle(col, a = 1) {
+    this.fc = typeof col === 'number' ? hexStr(col) : col;
+    this.fa = a;
+  }
+  lineStyle(w, col, a = 1) {
+    this.sc = typeof col === 'number' ? hexStr(col) : col;
+    this.sa = a; this.sw = w;
+    this.c.lineWidth = w;
+  }
+  _af() { this.c.fillStyle = this.fc; this.c.globalAlpha = this.fa; }
+  _as() { this.c.strokeStyle = this.sc; this.c.globalAlpha = this.sa; this.c.lineWidth = this.sw; }
+
+  fillEllipse(cx, cy, w, h) {
+    this._af();
+    this.c.beginPath();
+    this.c.ellipse(cx, cy, Math.abs(w/2), Math.abs(h/2), 0, 0, Math.PI*2);
+    this.c.fill();
+  }
+  fillRect(x, y, w, h) { this._af(); this.c.fillRect(x, y, w, h); }
+  fillRoundedRect(x, y, w, h, r) {
+    this._af();
+    const rr = Math.min(Math.abs(r), Math.abs(w)/2, Math.abs(h)/2);
+    this.c.beginPath();
+    this.c.moveTo(x + rr, y);
+    this.c.lineTo(x + w - rr, y);
+    this.c.arcTo(x + w, y, x + w, y + rr, rr);
+    this.c.lineTo(x + w, y + h - rr);
+    this.c.arcTo(x + w, y + h, x + w - rr, y + h, rr);
+    this.c.lineTo(x + rr, y + h);
+    this.c.arcTo(x, y + h, x, y + h - rr, rr);
+    this.c.lineTo(x, y + rr);
+    this.c.arcTo(x, y, x + rr, y, rr);
+    this.c.closePath();
+    this.c.fill();
+  }
+  fillCircle(cx, cy, r) {
+    this._af();
+    this.c.beginPath();
+    this.c.arc(cx, cy, Math.abs(r), 0, Math.PI*2);
+    this.c.fill();
+  }
+  fillTriangle(x1,y1,x2,y2,x3,y3) {
+    this._af();
+    this.c.beginPath();
+    this.c.moveTo(x1,y1); this.c.lineTo(x2,y2); this.c.lineTo(x3,y3);
+    this.c.closePath(); this.c.fill();
+  }
+  beginPath() { this.c.beginPath(); }
+  moveTo(x,y) { this.c.moveTo(x,y); }
+  lineTo(x,y) { this.c.lineTo(x,y); }
+  strokePath() { this._as(); this.c.stroke(); }
+}
+
+// ─── Drawing functions (translated 1:1 from PaoSpriteFactory.ts) ──────────
+function drawHead(g, x, y, pose) {
+  const happy = pose==='run-1'||pose==='jump'||pose==='win'||pose==='power';
+  g.fillStyle(PAO.outline,1); g.fillEllipse(x-8,y+5,34,31);
+  g.fillStyle(PAO.hairDark,1);
+  g.fillEllipse(x-9,y-2,38,19); g.fillEllipse(x-22,y+9,11,22); g.fillEllipse(x+7,y+8,9,20);
+  g.fillStyle(PAO.hair,1);
+  g.fillEllipse(x-9,y,33,15); g.fillEllipse(x-22,y+10,7,18); g.fillEllipse(x+7,y+9,6,16);
+  g.fillTriangle(x-13,y-7,x-1,y-2,x-18,y+5);
+  g.fillTriangle(x-3,y-7,x+7,y+3,x-2,y+4);
+  g.fillStyle(PAO.hairLight,1);
+  g.fillRect(x-15,y-7,10,2); g.fillRect(x-3,y-6,8,2);
+  g.fillStyle(PAO.skin,1);
+  g.fillRoundedRect(x-18,y+3,27,22,7);
+  g.fillTriangle(x+6,y+11,x+14,y+14,x+6,y+17);
+  g.fillRoundedRect(x-23,y+11,5,8,3);
+  g.fillStyle(PAO.skinLight,1); g.fillRect(x-13,y+5,15,5);
+  g.fillStyle(PAO.hairDark,1);
+  g.fillRect(x-14,y+10,9,2); g.fillRect(x-1,y+9,10,2);
+  g.fillStyle(0xf8f2e9,1);
+  g.fillRoundedRect(x-13,y+13,7,5,2); g.fillRoundedRect(x,y+13,8,5,2);
+  g.fillStyle(0x17120f,1);
+  g.fillRect(x-10,y+14,3,3); g.fillRect(x+3,y+14,3,3);
+  g.fillStyle(0xffffff,1);
+  g.fillRect(x-11,y+14,1,1); g.fillRect(x+2,y+14,1,1);
+  g.fillStyle(PAO.skinLight,0.92); g.fillRect(x-2,y+18,3,2);
+  g.fillStyle(PAO.cheek,0.62);
+  g.fillRect(x-17,y+20,5,2); g.fillRect(x+5,y+20,5,2);
+  g.fillStyle(0x702528,1);
+  if (happy) {
+    g.fillRoundedRect(x-3,y+23,11,3,2);
+    g.fillStyle(0xffffff,1); g.fillRect(x-1,y+23,6,1);
+  } else if (pose==='hurt') {
+    g.fillRect(x-2,y+23,7,2);
+  } else {
+    g.fillRect(x-2,y+23,8,2);
+  }
+}
+
+function drawBackBraid(g, x, y, pose) {
+  const pts = pose==='run-1'
+    ? [{x:x-19,y:y+10,r:6},{x:x-32,y:y+8,r:6},{x:x-45,y:y+12,r:6},{x:x-56,y:y+20,r:5}]
+    : (pose==='run-2'||pose==='jump'||pose==='win')
+    ? [{x:x-19,y:y+10,r:6},{x:x-31,y:y+4,r:6},{x:x-44,y:y+8,r:6},{x:x-54,y:y+16,r:5}]
+    : [{x:x-19,y:y+12,r:6},{x:x-24,y:y+24,r:6},{x:x-24,y:y+36,r:6},{x:x-20,y:y+48,r:5}];
+  g.fillStyle(PAO.hairDark,1); pts.forEach(p=>g.fillCircle(p.x,p.y,p.r));
+  g.fillStyle(PAO.hair,1); pts.forEach(p=>g.fillCircle(p.x+1,p.y-1,p.r-1));
+  g.fillStyle(PAO.hairLight,1);
+  g.fillCircle(pts[1].x,pts[1].y-2,2); g.fillCircle(pts[2].x,pts[2].y-1,2);
+  g.fillStyle(C.aqua,1);
+  const tie=pts[pts.length-1]; g.fillRect(tie.x-4,tie.y-2,8,3);
+}
+
+function drawFrontBraid(g, x, y, pose) {
+  if (pose==='hurt') return;
+  const lift=(pose==='jump'||pose==='win')?-4:0;
+  const bx=x+6, by=y+25+lift;
+  g.fillStyle(PAO.hairDark,1);
+  g.fillCircle(bx,by,5); g.fillCircle(bx+1,by+10,5); g.fillCircle(bx,by+20,4);
+  g.fillStyle(PAO.hair,1);
+  g.fillCircle(bx+1,by-1,4); g.fillCircle(bx+2,by+9,4); g.fillCircle(bx+1,by+19,3);
+  g.fillStyle(C.aqua,1); g.fillRect(bx-3,by+15,7,3);
+}
+
+function drawTorso(g, x, y) {
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(x-12,y-4,25,25,4);
+  g.fillStyle(PAO.shirt,1); g.fillRoundedRect(x-10,y-3,21,22,3);
+  g.fillStyle(PAO.shirtLight,1); g.fillRect(x-7,y,14,4);
+  g.fillStyle(PAO.skinLight,1); g.fillRect(x-6,y-6,14,3);
+  g.fillStyle(C.cream,1); g.fillCircle(x+2,y+9,4); g.fillRect(x+1,y+12,3,4);
+  g.fillStyle(PAO.belt,1); g.fillRect(x-12,y+18,25,3);
+  g.fillStyle(C.gold,1); g.fillRect(x,y+18,4,3);
+}
+
+function drawArms(g, x, y, pose) {
+  const lft = pose==='run-1' ? {x:x-27,y:y+14}
+    : pose==='run-2' ? {x:x-16,y:y+4}
+    : (pose==='jump'||pose==='win') ? {x:x-22,y:y-18}
+    : pose==='power' ? {x:x-12,y:y+11}
+    : pose==='hurt' ? {x:x-22,y:y+4}
+    : {x:x-15,y:y+19};
+  const rgt = pose==='run-1' ? {x:x+22,y:y+2}
+    : pose==='run-2' ? {x:x+18,y:y+15}
+    : (pose==='jump'||pose==='win') ? {x:x+23,y:y-18}
+    : pose==='power' ? {x:x+30,y:y-6}
+    : pose==='hurt' ? {x:x+18,y:y+7}
+    : {x:x+12,y:y+17};
+
+  g.lineStyle(7,PAO.outline,1);
+  g.beginPath(); g.moveTo(x-8,y+2); g.lineTo(lft.x,lft.y); g.strokePath();
+  g.beginPath(); g.moveTo(x+8,y+2); g.lineTo(rgt.x,rgt.y); g.strokePath();
+  g.lineStyle(5,PAO.skin,1);
+  g.beginPath(); g.moveTo(x-8,y+2); g.lineTo(lft.x,lft.y); g.strokePath();
+  g.beginPath(); g.moveTo(x+8,y+2); g.lineTo(rgt.x,rgt.y); g.strokePath();
+  g.lineStyle(6,PAO.shirt,1);
+  g.beginPath(); g.moveTo(x-8,y+2); g.lineTo(x-14,y+7); g.strokePath();
+  g.beginPath(); g.moveTo(x+8,y+2); g.lineTo(x+13,y+7); g.strokePath();
+  g.fillStyle(PAO.skin,1); g.fillCircle(lft.x,lft.y,4); g.fillCircle(rgt.x,rgt.y,4);
+  g.fillStyle(C.aqua,1); g.fillCircle(lft.x+1,lft.y-2,2);
+}
+
+function drawPantLeg(g, hipX, hipY, knee, foot) {
+  g.lineStyle(14,PAO.outline,1);
+  g.beginPath(); g.moveTo(hipX,hipY); g.lineTo(knee.x,knee.y); g.lineTo(foot.x,foot.y-5); g.strokePath();
+  g.lineStyle(11,PAO.denim,1);
+  g.beginPath(); g.moveTo(hipX,hipY); g.lineTo(knee.x,knee.y); g.lineTo(foot.x,foot.y-5); g.strokePath();
+  g.lineStyle(3,PAO.denimLight,0.75);
+  g.beginPath(); g.moveTo(hipX+1,hipY+3); g.lineTo(knee.x+1,knee.y-2); g.strokePath();
+  g.fillStyle(PAO.denimDark,1); g.fillRoundedRect(knee.x-5,knee.y-2,12,8,2);
+  g.fillStyle(PAO.denimLight,1); g.fillRoundedRect(foot.x-7,foot.y-10,14,6,2);
+}
+
+function drawShoe(g, x, y) {
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(x-12,y-2,24,8,3);
+  g.fillStyle(PAO.shoe,1); g.fillRoundedRect(x-10,y-4,20,8,3);
+  g.fillStyle(PAO.sole,1); g.fillRect(x-11,y+2,22,3);
+  g.fillStyle(C.star,1); g.fillRect(x-4,y-2,3,3);
+  g.fillStyle(PAO.sole,0.95); g.fillRect(x+2,y-2,5,2);
+}
+
+function drawLegs(g, x, y, pose) {
+  const hipY = y+20;
+  const lk = pose==='run-1' ? {x:x-16,y:hipY+12}
+    : pose==='run-2' ? {x:x,y:hipY+15}
+    : (pose==='jump'||pose==='win') ? {x:x-8,y:hipY+8}
+    : {x:x-7,y:hipY+15};
+  const lf = pose==='run-1' ? {x:x-31,y:84}
+    : pose==='run-2' ? {x:x-5,y:86}
+    : (pose==='jump'||pose==='win') ? {x:x-20,y:78}
+    : {x:x-9,y:86};
+  const rk = pose==='run-1' ? {x:x+14,y:hipY+4}
+    : pose==='run-2' ? {x:x+21,y:hipY+15}
+    : (pose==='jump'||pose==='win') ? {x:x+19,y:hipY+2}
+    : {x:x+8,y:hipY+15};
+  const rf = pose==='run-1' ? {x:x+26,y:84}
+    : pose==='run-2' ? {x:x+35,y:85}
+    : (pose==='jump'||pose==='win') ? {x:x+14,y:72}
+    : {x:x+9,y:86};
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(x-13,hipY-3,28,10,3);
+  g.fillStyle(PAO.denimDark,1); g.fillRoundedRect(x-11,hipY-2,24,8,2);
+  drawPantLeg(g,x-7,hipY+2,lk,lf); drawPantLeg(g,x+7,hipY+2,rk,rf);
+  drawShoe(g,lf.x,lf.y); drawShoe(g,rf.x,rf.y);
+}
+
+function drawBody(g, x, y, pose) {
+  drawArms(g,x,y,pose); drawTorso(g,x,y); drawLegs(g,x,y,pose);
+}
+
+function drawSparkle(g, x, y, scale) {
+  g.fillStyle(C.glow,1);
+  g.fillRect(x-2*scale,y-9*scale,4*scale,18*scale);
+  g.fillRect(x-9*scale,y-2*scale,18*scale,4*scale);
+}
+
+// ─── Render a pose to a canvas ────────────────────────────────────────────
+const ART_SCALE = 1.3;
+const FRAME = 124;
+
+function renderPose(canvas, pose) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const g = new G(ctx);
+  const run = pose==='run-1'||pose==='run-2';
+  const air = pose==='jump'||pose==='fall'||pose==='win';
+  const bounce = pose==='idle-2' ? -2 : 0;
+  const lean = (run||pose==='power') ? 4 : pose==='hurt' ? -4 : 0;
+  const head = {x:55+lean, y:air?20:25+bounce};
+  const torso = {x:47+lean, y:air?47:51+bounce};
+  g.save(); g.scaleCanvas(ART_SCALE,ART_SCALE);
+  g.fillStyle(0x000000,0.18);
+  g.fillEllipse(48,88,run?50:38,7);
+  drawBackBraid(g,head.x,head.y,pose);
+  drawBody(g,torso.x,torso.y,pose);
+  drawHead(g,head.x,head.y,pose);
+  drawFrontBraid(g,head.x,head.y,pose);
+  if (pose==='win') drawSparkle(g,head.x+23,head.y-18,0.8);
+  g.restore();
+}
+
+// ─── Build pose grid ─────────────────────────────────────────────────────
+const POSES = [
+  ['idle-1','Idle 1'],['idle-2','Idle 2'],['run-1','Run 1'],['run-2','Run 2'],
+  ['jump','Jump'],['fall','Fall'],['hurt','Hurt'],['win','Win'],['power','Power'],
+];
+const grid = document.getElementById('posesGrid');
+POSES.forEach(([pose, label]) => {
+  const cell = document.createElement('div');
+  cell.className = 'pose-cell';
+  const cvs = document.createElement('canvas');
+  cvs.width = FRAME; cvs.height = FRAME;
+  renderPose(cvs, pose);
+  const lbl = document.createElement('div');
+  lbl.className = 'pose-label'; lbl.textContent = label;
+  cell.appendChild(cvs); cell.appendChild(lbl);
+  grid.appendChild(cell);
+});
+
+// ─── Multi-select ─────────────────────────────────────────────────────────
+const selected = new Set();
+function toggleOpt(el) {
+  const c = el.dataset.choice;
+  if (selected.has(c)) { selected.delete(c); el.classList.remove('selected'); }
+  else { selected.add(c); el.classList.add('selected'); }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Design: Phase 2 — All Poses</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#13192b; color:#dde6ff; font-family:'Segoe UI',system-ui,sans-serif; padding:24px; }
+h2 { color:#ffd84d; font-size:20px; margin-bottom:4px; }
+.subtitle { color:#7a9abf; font-size:13px; margin-bottom:22px; line-height:1.5; }
+
+.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:28px; }
+.card { background:#0e1422; border:1px solid #1e2a40; border-radius:10px; padding:14px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.card-title { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#4fc3d9; font-weight:700; }
+canvas { border-radius:6px; background:#1b2640; }
+.card-notes { font-size:11px; color:#6a8aaa; line-height:1.6; width:100%; }
+.card-notes li { margin-left:14px; list-style:disc; }
+.new { color:#6dbf8a; }
+
+.section-title { color:#ffd84d; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin:0 0 12px; }
+
+.files-box { background:#1a2236; border:1px solid #252f47; border-radius:8px; padding:14px 18px; margin-bottom:22px; }
+.file-row { display:flex; align-items:center; gap:12px; margin-bottom:8px; font-size:13px; }
+.file-row:last-child { margin-bottom:0; }
+.file-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; min-width:60px; text-align:center; }
+.tag-main { background:#1a3040; color:#4fc3d9; }
+.tag-minor { background:#2a2a14; color:#b0a040; }
+.file-name { color:#dde6ff; font-family:monospace; }
+.file-desc { color:#7a9abf; }
+
+.q { text-align:center; color:#7a9abf; font-size:13px; }
+.q strong { color:#ffd84d; }
+</style>
+</head>
+<body>
+<h2>Design — Phase 2: All 9 Poses Redrawn</h2>
+<p class="subtitle">Every pose uses the new coordinate foundation (124×160 frame, neck, longer legs). Below is the planned change per pose, with key ones rendered so you can see the direction.</p>
+
+<div class="grid" id="poseGrid"></div>
+
+<div class="section-title">Files changed</div>
+<div class="files-box">
+  <div class="file-row">
+    <span class="file-tag tag-main">Primary</span>
+    <span class="file-name">src/systems/PaoSpriteFactory.ts</span>
+    <span class="file-desc">— complete rewrite of all drawing functions + constants</span>
+  </div>
+  <div class="file-row">
+    <span class="file-tag tag-minor">Minor</span>
+    <span class="file-name">src/systems/PlayerController.ts</span>
+    <span class="file-desc">— 4 lines: update setSize + setOffset for 124×160 frame</span>
+  </div>
+</div>
+
+<p class="q"><strong>Does the pose plan look right?</strong> Reply yes in the terminal to move on to the spec doc — or tell me what to change.</p>
+
+<script>
+const PAO = {
+  outline:'#241713', skin:'#c9855f', skinLight:'#ffc493', cheek:'#e98f7d',
+  hairDark:'#2b1a12', hair:'#5a321d', hairLight:'#a5673c',
+  shirt:'#28573f', shirtLight:'#3f7656', denimDark:'#2f536f',
+  denim:'#557fa8', denimLight:'#8aaaca', belt:'#70482c', shoe:'#143d33', sole:'#f4ead0',
+};
+const C = { aqua:'#4fc3d9', cream:'#f4e4c8', gold:'#f6c35b', star:'#ffd84d', glow:'#fff3b0', orange:'#e07a28' };
+
+class G {
+  constructor(ctx){this.c=ctx;this.fc='#000';this.fa=1;this.sc='#000';this.sa=1;this.sw=1;}
+  save(){this.c.save();}restore(){this.c.restore();}
+  scaleCanvas(sx,sy){this.c.scale(sx,sy);}
+  fillStyle(col,a=1){this.fc=typeof col==='number'?'#'+col.toString(16).padStart(6,'0'):col;this.fa=a;}
+  lineStyle(w,col,a=1){this.sc=typeof col==='number'?'#'+col.toString(16).padStart(6,'0'):col;this.sa=a;this.sw=w;}
+  _af(){this.c.fillStyle=this.fc;this.c.globalAlpha=this.fa;}
+  _as(){this.c.strokeStyle=this.sc;this.c.globalAlpha=this.sa;this.c.lineWidth=this.sw;}
+  fillEllipse(cx,cy,w,h){this._af();this.c.beginPath();this.c.ellipse(cx,cy,Math.abs(w/2),Math.abs(h/2),0,0,Math.PI*2);this.c.fill();}
+  fillRect(x,y,w,h){this._af();this.c.fillRect(x,y,w,h);}
+  fillRoundedRect(x,y,w,h,r){
+    this._af();const rr=Math.min(Math.abs(r),Math.abs(w)/2,Math.abs(h)/2);
+    this.c.beginPath();this.c.moveTo(x+rr,y);this.c.lineTo(x+w-rr,y);
+    this.c.arcTo(x+w,y,x+w,y+rr,rr);this.c.lineTo(x+w,y+h-rr);
+    this.c.arcTo(x+w,y+h,x+w-rr,y+h,rr);this.c.lineTo(x+rr,y+h);
+    this.c.arcTo(x,y+h,x,y+h-rr,rr);this.c.lineTo(x,y+rr);
+    this.c.arcTo(x,y,x+rr,y,rr);this.c.closePath();this.c.fill();
+  }
+  fillCircle(cx,cy,r){this._af();this.c.beginPath();this.c.arc(cx,cy,Math.abs(r),0,Math.PI*2);this.c.fill();}
+  fillTriangle(x1,y1,x2,y2,x3,y3){this._af();this.c.beginPath();this.c.moveTo(x1,y1);this.c.lineTo(x2,y2);this.c.lineTo(x3,y3);this.c.closePath();this.c.fill();}
+  beginPath(){this.c.beginPath();}moveTo(x,y){this.c.moveTo(x,y);}lineTo(x,y){this.c.lineTo(x,y);}
+  strokePath(){this._as();this.c.stroke();}
+}
+
+// ── Shared sub-functions ──────────────────────────────────────────────────
+
+function drawHead(g, hx, hy, expr) {
+  // expr: 'happy' | 'determined' | 'hurt'
+  g.fillStyle(PAO.outline,1); g.fillEllipse(hx-4,hy+2,42,36);
+  g.fillStyle(PAO.hairDark,1);
+  g.fillEllipse(hx-4,hy-4,44,22);
+  g.fillEllipse(hx-20,hy+8,13,28);
+  g.fillEllipse(hx+13,hy+7,11,24);
+  g.fillStyle(PAO.hair,1);
+  g.fillEllipse(hx-4,hy-2,38,18);
+  g.fillEllipse(hx-20,hy+9,9,22);
+  g.fillEllipse(hx+13,hy+8,8,20);
+  g.fillStyle(PAO.hairLight,1);
+  g.fillRect(hx-12,hy-8,12,3); g.fillRect(hx+2,hy-7,10,3);
+  g.fillStyle(PAO.skin,1);
+  g.fillRoundedRect(hx-20,hy+4,32,26,8);
+  g.fillTriangle(hx+9,hy+10,hx+18,hy+14,hx+9,hy+18);
+  g.fillRoundedRect(hx-25,hy+12,6,10,3);
+  g.fillStyle(PAO.skinLight,1); g.fillRect(hx-14,hy+6,18,6);
+  // brows
+  g.fillStyle(PAO.hairDark,1);
+  if (expr==='hurt') {
+    g.fillRect(hx-16,hy+12,11,2); g.fillRect(hx-2,hy+12,12,2); // flat
+  } else if (expr==='happy') {
+    g.fillRect(hx-16,hy+13,11,2); g.fillRect(hx-2,hy+12,12,2); // relaxed
+  } else {
+    g.fillRect(hx-16,hy+12,11,2); g.fillRect(hx-2,hy+11,12,2); // determined — inner raised
+  }
+  // eyes
+  g.fillStyle(0xffffff,1); g.fillRoundedRect(hx-15,hy+15,9,7,2); g.fillRoundedRect(hx-1,hy+15,10,7,2);
+  g.fillStyle(0x3a2010,1); g.fillCircle(hx-11,hy+18,3); g.fillCircle(hx+4,hy+18,3);
+  g.fillStyle(0x000000,1); g.fillCircle(hx-11,hy+18,2); g.fillCircle(hx+4,hy+18,2);
+  g.fillStyle(0xffffff,1); g.fillRect(hx-12,hy+16,2,2); g.fillRect(hx+3,hy+16,2,2);
+  // lashes
+  g.lineStyle(1,PAO.hairDark,0.9);
+  [-14,-11,-8].forEach(ox=>{ g.beginPath();g.moveTo(hx+ox,hy+15);g.lineTo(hx+ox-1,hy+13);g.strokePath(); });
+  [-1,2,6,9].forEach(ox=>{ g.beginPath();g.moveTo(hx+ox,hy+15);g.lineTo(hx+ox,hy+13);g.strokePath(); });
+  // nose
+  g.fillStyle(PAO.skinLight,0.7); g.fillRect(hx-1,hy+20,3,2);
+  // cheeks
+  g.fillStyle(PAO.cheek,0.45); g.fillEllipse(hx-16,hy+23,10,5); g.fillEllipse(hx+11,hy+23,10,5);
+  // mouth
+  g.fillStyle(0x6a2024,1);
+  if (expr==='happy') {
+    g.fillRoundedRect(hx-4,hy+24,12,3,2);
+    g.fillStyle(0xffffff,1); g.fillRect(hx-2,hy+24,7,1);
+  } else if (expr==='hurt') {
+    g.fillRect(hx-2,hy+24,7,2); // small open grimace
+    g.fillStyle(0xffffff,1); g.fillRect(hx-1,hy+24,4,1);
+  } else {
+    g.fillRect(hx-3,hy+24,9,2); // firm line
+  }
+}
+
+function drawNeck(g, cx, y) {
+  g.fillStyle(PAO.outline,1); g.fillRect(cx-5,y,10,8);
+  g.fillStyle(PAO.skin,1); g.fillRect(cx-3,y,8,8);
+}
+
+function drawTorso(g, cx, ty) {
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(cx-16,ty,32,30,5);
+  g.fillStyle(PAO.shirt,1); g.fillRoundedRect(cx-14,ty+1,28,27,4);
+  g.fillStyle(PAO.shirtLight,1); g.fillRect(cx-8,ty+5,16,5);
+  g.fillStyle(PAO.skinLight,1); g.fillRect(cx-13,ty+25,26,4); // midriff
+  g.fillStyle(C.cream,1); g.fillCircle(cx+2,ty+12,5); g.fillRect(cx+1,ty+15,3,6); // necklace
+  g.fillStyle(PAO.belt,1); g.fillRect(cx-15,ty+28,30,5);
+  g.fillStyle(C.gold,1); g.fillRect(cx-2,ty+28,7,5);
+}
+
+function drawArm(g, fromX, fromY, toX, toY, sleeve) {
+  g.lineStyle(9,PAO.outline,1); g.beginPath(); g.moveTo(fromX,fromY); g.lineTo(toX,toY); g.strokePath();
+  g.lineStyle(7,PAO.skin,1); g.beginPath(); g.moveTo(fromX,fromY); g.lineTo(toX,toY); g.strokePath();
+  if (sleeve) {
+    g.lineStyle(7,PAO.shirt,1); g.beginPath(); g.moveTo(fromX,fromY); g.lineTo(sleeve.x,sleeve.y); g.strokePath();
+  }
+  g.fillStyle(PAO.skin,1); g.fillCircle(toX,toY,5);
+}
+
+function drawBracelet(g, x, y) {
+  g.fillStyle(C.aqua,1); g.fillCircle(x,y,3);
+}
+
+function drawShoe(g, x, y) {
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(x-13,y-3,22,11,3);
+  g.fillStyle(PAO.shoe,1); g.fillRoundedRect(x-12,y-5,20,11,3);
+  g.fillStyle(PAO.sole,1); g.fillRect(x-13,y+3,22,4);
+  g.fillStyle(C.star,1); g.fillRect(x-7,y-2,4,4);
+  g.fillStyle(PAO.sole,0.8); g.fillRect(x-1,y-2,6,3);
+}
+
+function drawHips(g, cx, hy) {
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(cx-16,hy,34,11,3);
+  g.fillStyle(PAO.denimDark,1); g.fillRoundedRect(cx-14,hy+1,30,9,2);
+}
+
+function drawLeg(g, hipX, hipY, kneeX, kneeY, footX, footY) {
+  g.lineStyle(16,PAO.outline,1);
+  g.beginPath(); g.moveTo(hipX,hipY); g.lineTo(kneeX,kneeY); g.lineTo(footX,footY); g.strokePath();
+  g.lineStyle(13,PAO.denim,1);
+  g.beginPath(); g.moveTo(hipX,hipY); g.lineTo(kneeX,kneeY); g.lineTo(footX,footY); g.strokePath();
+  g.lineStyle(3,PAO.denimLight,0.7);
+  g.beginPath(); g.moveTo(hipX+1,hipY+3); g.lineTo(kneeX+1,kneeY-2); g.strokePath();
+  g.fillStyle(PAO.denimDark,1); g.fillRoundedRect(kneeX-7,kneeY-3,14,10,2);
+}
+
+function drawBackBraid(g, startX, startY, pose) {
+  let pts;
+  if (pose==='run-1'||pose==='run-2') {
+    // braid flies straight back horizontally
+    const d = pose==='run-1' ? 1 : -1;
+    pts=[[startX,startY+2,7],[startX-14,startY-4+d*3,7],[startX-28,startY-2+d*2,6],[startX-42,startY+2+d,6],[startX-55,startY+8,5]];
+  } else if (pose==='jump'||pose==='win') {
+    pts=[[startX,startY+5,7],[startX-12,startY-2,7],[startX-24,startY+4,6],[startX-34,startY+14,6],[startX-40,startY+24,5]];
+  } else if (pose==='fall') {
+    pts=[[startX,startY+5,7],[startX-10,startY-4,7],[startX-20,startY-2,6],[startX-30,startY+6,6],[startX-38,startY+16,5]];
+  } else {
+    // idle/hurt/power — hangs behind and down
+    pts=[[startX,startY+8,7],[startX-4,startY+22,7],[startX-3,startY+36,7],[startX-1,startY+50,6],[startX+1,startY+62,5]];
+  }
+  pts.forEach(([x,y,r])=>{
+    g.fillStyle(PAO.hairDark,1); g.fillCircle(x,y,r);
+    g.fillStyle(PAO.hair,1); g.fillCircle(x+1,y-1,r-2);
+    g.fillStyle(PAO.hairLight,0.5); g.fillCircle(x+1,y-2,r-4);
+  });
+  const last=pts[pts.length-1];
+  g.fillStyle(C.aqua,1); g.fillRect(last[0]-4,last[1]-1,8,4);
+}
+
+function drawFrontBraid(g, startX, startY, pose) {
+  if (pose==='hurt') return;
+  const lift=(pose==='jump'||pose==='win')?-8:0;
+  const pts=[[startX,startY+lift,6],[startX+1,startY+12+lift,6],[startX,startY+24+lift,5],[startX+1,startY+35+lift,4]];
+  pts.forEach(([x,y,r])=>{
+    g.fillStyle(PAO.hairDark,1); g.fillCircle(x,y,r);
+    g.fillStyle(PAO.hair,1); g.fillCircle(x+1,y-1,r-2);
+    g.fillStyle(PAO.hairLight,0.4); g.fillCircle(x+2,y-1,r-4);
+  });
+  const last=pts[pts.length-1];
+  g.fillStyle(C.aqua,1); g.fillRect(last[0]-3,last[1]-1,7,4);
+}
+
+function drawShadow(g, cx, y, w) {
+  g.fillStyle('#000000',0.15); g.fillEllipse(cx,y,w,8);
+}
+
+// ── Full pose renderers ────────────────────────────────────────────────────
+
+function renderIdle1(ctx) {
+  const g=new G(ctx); const cx=60, hx=cx+4, hy=22;
+  drawShadow(g,cx,152,46);
+  drawBackBraid(g,hx-14,hy+30,'idle-1');
+  // arms
+  drawArm(g,cx-10,82,cx-20,107,{x:cx-16,y:91});
+  drawBracelet(g,cx-19,105);
+  drawArm(g,cx+10,82,cx+19,107,{x:cx+16,y:91});
+  drawNeck(g,cx,52); drawTorso(g,cx,60);
+  drawHips(g,cx,108);
+  drawLeg(g,cx-8,117,cx-10,134,cx-14,145);
+  drawLeg(g,cx+8,117,cx+12,134,cx+16,145);
+  drawShoe(g,cx-13,146); drawShoe(g,cx+17,146);
+  drawHead(g,hx,hy,'determined');
+  drawFrontBraid(g,hx+12,hy+30,'idle-1');
+}
+
+function renderIdle2(ctx) {
+  const g=new G(ctx); const cx=60, hx=cx+4, hy=23;
+  drawShadow(g,cx,152,44);
+  drawBackBraid(g,hx-14,hy+30,'idle-1');
+  drawArm(g,cx-10,82,cx-22,108,{x:cx-17,y:91}); // hip resting pose
+  drawBracelet(g,cx-20,106);
+  drawArm(g,cx+10,82,cx+16,106,{x:cx+15,y:91});
+  drawNeck(g,cx,52); drawTorso(g,cx,60);
+  drawHips(g,cx,108);
+  drawLeg(g,cx-8,117,cx-9,135,cx-12,146); // weight shift
+  drawLeg(g,cx+8,117,cx+14,134,cx+17,145);
+  drawShoe(g,cx-11,147); drawShoe(g,cx+18,146);
+  drawHead(g,hx,hy,'determined'); // same expression, slight height diff
+  drawFrontBraid(g,hx+12,hy+30,'idle-2');
+}
+
+function renderRun1(ctx) {
+  const g=new G(ctx); const cx=62, hx=cx+6, hy=20;
+  drawShadow(g,cx,152,54);
+  drawBackBraid(g,hx-14,hy+28,'run-1');
+  // arms pumping: right arm forward-up, left arm back-down
+  drawArm(g,cx-10,81,cx+8,62,{x:cx-4,y:73}); // left arm forward
+  drawBracelet(g,cx+8,62);
+  drawArm(g,cx+10,81,cx+28,96,{x:cx+18,y:88}); // right arm back
+  drawNeck(g,cx,51); drawTorso(g,cx,59);
+  drawHips(g,cx,107);
+  // stride: left leg forward, right leg back
+  drawLeg(g,cx-8,116,cx-18,130,cx-24,144);
+  drawLeg(g,cx+8,116,cx+20,128,cx+30,142);
+  drawShoe(g,cx-23,145); drawShoe(g,cx+31,143);
+  drawHead(g,hx,hy,'happy');
+  drawFrontBraid(g,hx+11,hy+28,'run-1');
+}
+
+function renderRun2(ctx) {
+  const g=new G(ctx); const cx=62, hx=cx+6, hy=20;
+  drawShadow(g,cx,152,54);
+  drawBackBraid(g,hx-14,hy+28,'run-2');
+  // arms alternate: left arm back, right arm forward-up
+  drawArm(g,cx-10,81,cx-28,94,{x:cx-18,y:88}); // left arm back
+  drawBracelet(g,cx-27,93);
+  drawArm(g,cx+10,81,cx-6,62,{x:cx+4,y:73}); // right arm forward
+  drawNeck(g,cx,51); drawTorso(g,cx,59);
+  drawHips(g,cx,107);
+  drawLeg(g,cx-8,116,cx+4,130,cx+12,143);
+  drawLeg(g,cx+8,116,cx-4,128,cx-14,142);
+  drawShoe(g,cx+13,144); drawShoe(g,cx-13,143);
+  drawHead(g,hx,hy,'happy');
+  drawFrontBraid(g,hx+11,hy+28,'run-2');
+}
+
+function renderJump(ctx) {
+  const g=new G(ctx); const cx=60, hx=cx+4, hy=12;
+  drawShadow(g,cx,152,34);
+  drawBackBraid(g,hx-14,hy+28,'jump');
+  // both arms raised
+  drawArm(g,cx-10,72,cx-26,50,{x:cx-16,y:62}); // left arm up-left
+  drawBracelet(g,cx-26,50);
+  drawArm(g,cx+10,72,cx+26,52,{x:cx+18,y:62}); // right arm up-right
+  drawNeck(g,cx,42); drawTorso(g,cx,50);
+  drawHips(g,cx,98);
+  // knees pulled up
+  drawLeg(g,cx-8,107,cx-22,118,cx-18,132);
+  drawLeg(g,cx+8,107,cx+22,118,cx+20,132);
+  drawShoe(g,cx-17,133); drawShoe(g,cx+21,133);
+  drawHead(g,hx,hy,'happy');
+  drawFrontBraid(g,hx+12,hy+28,'jump');
+}
+
+function renderFall(ctx) {
+  const g=new G(ctx); const cx=60, hx=cx+4, hy=14;
+  drawShadow(g,cx,152,36);
+  drawBackBraid(g,hx-14,hy+28,'fall');
+  // arms spread wide downward
+  drawArm(g,cx-10,74,cx-30,96,{x:cx-18,y:83}); // left arm out-down
+  drawBracelet(g,cx-29,95);
+  drawArm(g,cx+10,74,cx+30,94,{x:cx+20,y:83}); // right arm out-down
+  drawNeck(g,cx,44); drawTorso(g,cx,52);
+  drawHips(g,cx,100);
+  // legs trailing down/back
+  drawLeg(g,cx-8,109,cx-4,126,cx-8,140);
+  drawLeg(g,cx+8,109,cx+6,124,cx+10,138);
+  drawShoe(g,cx-7,141); drawShoe(g,cx+11,139);
+  drawHead(g,hx,hy,'determined');
+  drawFrontBraid(g,hx+12,hy+28,'fall');
+}
+
+function renderHurt(ctx) {
+  const g=new G(ctx); const cx=58, hx=cx-2, hy=24;
+  drawShadow(g,cx,152,42);
+  drawBackBraid(g,hx-14,hy+30,'idle-1');
+  // arms flung back — recoil
+  drawArm(g,cx-10,84,cx-26,68,{x:cx-16,y:77}); // left arm up-back
+  drawArm(g,cx+10,84,cx+24,70,{x:cx+18,y:78}); // right arm up-back
+  drawNeck(g,cx,54); drawTorso(g,cx,62);
+  drawHips(g,cx,110);
+  // legs stumbling back
+  drawLeg(g,cx-8,119,cx-16,133,cx-20,146);
+  drawLeg(g,cx+8,119,cx+8,134,cx+6,147);
+  drawShoe(g,cx-19,147); drawShoe(g,cx+7,148);
+  drawHead(g,hx,hy,'hurt');
+  // no front braid (hidden in recoil)
+}
+
+function renderWin(ctx) {
+  const g=new G(ctx); const cx=60, hx=cx+4, hy=12;
+  drawShadow(g,cx,152,46);
+  drawBackBraid(g,hx-14,hy+28,'win');
+  // one arm raised in victory, other on hip
+  drawArm(g,cx-10,72,cx-16,48,{x:cx-12,y:60}); // left arm up (victory)
+  drawBracelet(g,cx-15,49);
+  drawArm(g,cx+10,72,cx+22,90,{x:cx+18,y:82}); // right arm on hip
+  drawNeck(g,cx,42); drawTorso(g,cx,50);
+  drawHips(g,cx,98);
+  drawLeg(g,cx-8,107,cx-10,124,cx-12,144);
+  drawLeg(g,cx+8,107,cx+12,124,cx+16,144);
+  drawShoe(g,cx-11,145); drawShoe(g,cx+17,145);
+  drawHead(g,hx,hy,'happy');
+  drawFrontBraid(g,hx+12,hy+28,'win');
+  // sparkle
+  g.fillStyle(C.glow,1); g.fillRect(cx-18,28,4,16); g.fillRect(cx-24,34,16,4);
+  g.fillStyle(C.star,0.7); g.fillRect(cx-19,29,2,2); g.fillRect(cx-22,35,2,2);
+}
+
+function renderPower(ctx) {
+  const g=new G(ctx); const cx=60, hx=cx+6, hy=22;
+  drawShadow(g,cx,152,50);
+  drawBackBraid(g,hx-14,hy+28,'idle-1');
+  // throwing pose: right arm raised back (wind-up), left arm forward for balance
+  drawArm(g,cx-10,82,cx-24,68,{x:cx-16,y:76}); // left arm forward-up (balance)
+  drawBracelet(g,cx-23,68);
+  drawArm(g,cx+10,82,cx+34,58,{x:cx+22,y:70}); // right arm raised back (wind-up)
+  // basketball in right hand
+  g.fillStyle(PAO.outline,1); g.fillCircle(cx+34,58,8);
+  g.fillStyle(C.orange,1); g.fillCircle(cx+34,58,7);
+  g.lineStyle(1,'#8b3a00',0.8);
+  g.beginPath(); g.moveTo(cx+27,58); g.lineTo(cx+41,58); g.strokePath();
+  g.beginPath(); g.moveTo(cx+34,51); g.lineTo(cx+34,65); g.strokePath();
+  drawNeck(g,cx,52); drawTorso(g,cx,60);
+  drawHips(g,cx,108);
+  // planted stance
+  drawLeg(g,cx-8,117,cx-14,132,cx-16,145);
+  drawLeg(g,cx+8,117,cx+18,130,cx+24,143);
+  drawShoe(g,cx-15,146); drawShoe(g,cx+25,144);
+  drawHead(g,hx,hy,'determined');
+  drawFrontBraid(g,hx+12,hy+28,'power');
+}
+
+// ── Build cards ────────────────────────────────────────────────────────────
+const POSES = [
+  { label:'Idle 1', fn:renderIdle1, notes:['Upright confident stance','<span class="new">Longer legs, neck visible</span>','<span class="new">Larger expressive eyes + lashes</span>','<span class="new">Shell necklace + midriff</span>','Expression: Determined'] },
+  { label:'Idle 2', fn:renderIdle2, notes:['Slight weight shift variation','Same expression','<span class="new">Hip resting arm position</span>','2-frame cycle gives breathing feel'] },
+  { label:'Run 1', fn:renderRun1, notes:['<span class="new">Proper arm pump (left forward)</span>','<span class="new">Braid flies back horizontally</span>','<span class="new">Longer stride</span>','Expression: Happy'] },
+  { label:'Run 2', fn:renderRun2, notes:['Arms alternate (right forward)','Opposite stride to Run 1','Braid position mirrors Run 1','Expression: Happy'] },
+  { label:'Jump', fn:renderJump, notes:['<span class="new">Both arms raised overhead</span>','<span class="new">Knees pulled up</span>','Braid floats upward','Expression: Happy'] },
+  { label:'Fall', fn:renderFall, notes:['<span class="new">Distinct from Jump</span>','<span class="new">Arms spread wide downward</span>','Legs trail behind','Expression: Determined (focused)'] },
+  { label:'Hurt', fn:renderHurt, notes:['Lean back / recoil','<span class="new">Both arms flung up-back</span>','<span class="new">Front braid hidden</span>','Expression: Hurt (grimace)'] },
+  { label:'Win', fn:renderWin, notes:['One arm raised in victory','<span class="new">Other hand on hip</span>','<span class="new">Sparkle effect beside head</span>','Expression: Happy (teeth)'] },
+  { label:'Power', fn:renderPower, notes:['<span class="new">Basketball Toss: overhand wind-up</span>','<span class="new">Basketball visible in throwing hand</span>','Left arm forward for balance','Expression: Determined'] },
+];
+
+const grid = document.getElementById('poseGrid');
+POSES.forEach(({label, fn, notes}) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const title = document.createElement('div');
+  title.className = 'card-title';
+  title.textContent = label;
+
+  const cvs = document.createElement('canvas');
+  cvs.width = 124; cvs.height = 160;
+  fn(cvs.getContext('2d'));
+
+  const ul = document.createElement('ul');
+  ul.className = 'card-notes';
+  notes.forEach(n => { const li=document.createElement('li'); li.innerHTML=n; ul.appendChild(li); });
+
+  card.appendChild(title); card.appendChild(cvs); card.appendChild(ul);
+  grid.appendChild(card);
+});
+</script>
+</body>
+</html>

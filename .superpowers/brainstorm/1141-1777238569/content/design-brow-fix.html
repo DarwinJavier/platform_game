@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Brow Fix</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#13192b; color:#dde6ff; font-family:'Segoe UI',system-ui,sans-serif; padding:24px; }
+h2 { color:#ffd84d; font-size:20px; margin-bottom:4px; }
+.subtitle { color:#7a9abf; font-size:13px; margin-bottom:24px; }
+.row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+.panel { background:#0e1422; border:2px solid #1e2a40; border-radius:12px; padding:16px; display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer; transition:border-color 0.15s; }
+.panel:hover { border-color:#4fc3d9; }
+.panel.selected { border-color:#ffd84d; background:#1a2236; }
+.panel.current h3 { color:#e05555; }
+.panel h3 { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#4fc3d9; text-align:center; }
+canvas { border-radius:8px; background:#1b2640; }
+.desc { font-size:12px; color:#6a8aaa; text-align:center; line-height:1.5; }
+.q { text-align:center; color:#7a9abf; font-size:13px; }
+.q strong { color:#ffd84d; }
+</style>
+</head>
+<body>
+<h2>Brow Fix — Which looks friendly?</h2>
+<p class="subtitle">All faces use Smile C. The only change is the eyebrows. Click your pick, then reply in the terminal.</p>
+<div class="row">
+  <div class="panel current" data-choice="current" onclick="pick(this)">
+    <h3>Current — reads mad</h3>
+    <canvas id="c0" width="120" height="120"></canvas>
+    <p class="desc">Straight lines, too close to eyes, same height.</p>
+  </div>
+  <div class="panel" data-choice="a" onclick="pick(this)">
+    <h3>A — Gentle arch</h3>
+    <canvas id="cA" width="120" height="120"></canvas>
+    <p class="desc">Brows lifted higher, outer end drops slightly. Classic friendly arch.</p>
+  </div>
+  <div class="panel" data-choice="b" onclick="pick(this)">
+    <h3>B — Short & high</h3>
+    <canvas id="cB" width="120" height="120"></canvas>
+    <p class="desc">Shorter, thinner brows placed further above the eyes. Light, open feel.</p>
+  </div>
+  <div class="panel" data-choice="c" onclick="pick(this)">
+    <h3>C — Raised inner corners</h3>
+    <canvas id="cC" width="120" height="120"></canvas>
+    <p class="desc">Inner part of each brow raised — curious/surprised read, very open.</p>
+  </div>
+</div>
+<p class="q"><strong>Pick the one that reads friendliest, then reply in the terminal.</strong></p>
+
+<script>
+const PAO = { skin:'#c9855f', skinLight:'#ffc493', cheek:'#e98f7d', hairDark:'#2b1a12', hair:'#5a321d', hairLight:'#a5673c' };
+const MOUTH_DARK = '#5a1a1e';
+
+function drawFace(ctx, browFn) {
+  ctx.clearRect(0,0,120,120);
+  const s = 1.3;
+  ctx.save(); ctx.scale(s,s);
+  const hx = 44, hy = 22;
+
+  // Hair
+  ctx.fillStyle = PAO.hairDark; ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.ellipse(hx,hy-4,22,11,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx-16,hy+6,7,14,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = PAO.hair;
+  ctx.beginPath(); ctx.ellipse(hx,hy-2,19,9,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = PAO.hairLight;
+  ctx.fillRect(hx-8,hy-8,10,2); ctx.fillRect(hx+3,hy-7,8,2);
+
+  // Face
+  ctx.fillStyle = PAO.skin;
+  const r=4,x=hx-15,y=hy+2,w=28,h=24;
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx+14,hy+12,4,6,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = PAO.skinLight; ctx.fillRect(hx-10,hy+4,16,6);
+
+  // BROWS — delegated
+  browFn(ctx, hx, hy);
+
+  // Eyes
+  ctx.fillStyle='#ffffff';
+  [[hx-12,hy+13,8,6],[hx+1,hy+13,9,6]].forEach(([ex,ey,ew,eh])=>{
+    const rr=2; ctx.beginPath();
+    ctx.moveTo(ex+rr,ey); ctx.lineTo(ex+ew-rr,ey); ctx.arcTo(ex+ew,ey,ex+ew,ey+rr,rr);
+    ctx.lineTo(ex+ew,ey+eh-rr); ctx.arcTo(ex+ew,ey+eh,ex+ew-rr,ey+eh,rr);
+    ctx.lineTo(ex+rr,ey+eh); ctx.arcTo(ex,ey+eh,ex,ey+eh-rr,rr);
+    ctx.lineTo(ex,ey+rr); ctx.arcTo(ex,ey,ex+rr,ey,rr); ctx.closePath(); ctx.fill();
+  });
+  ctx.fillStyle='#3a2010';
+  ctx.beginPath(); ctx.arc(hx-8,hy+16,3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx+5,hy+16,3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#000';
+  ctx.beginPath(); ctx.arc(hx-8,hy+16,2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx+5,hy+16,2,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.fillRect(hx-10,hy+13,2,2); ctx.fillRect(hx+3,hy+13,2,2);
+
+  // Lashes
+  ctx.strokeStyle=PAO.hairDark; ctx.lineWidth=1; ctx.globalAlpha=0.85;
+  [-12,-9,-6].forEach(ox=>{ctx.beginPath();ctx.moveTo(hx+ox,hy+13);ctx.lineTo(hx+ox-1,hy+11);ctx.stroke();});
+  [1,4,7,10].forEach(ox=>{ctx.beginPath();ctx.moveTo(hx+ox,hy+13);ctx.lineTo(hx+ox,hy+11);ctx.stroke();});
+  ctx.globalAlpha=1;
+
+  // Nose + cheeks
+  ctx.fillStyle=PAO.skinLight; ctx.globalAlpha=0.7; ctx.fillRect(hx-1,hy+19,3,2); ctx.globalAlpha=1;
+  ctx.fillStyle=PAO.cheek; ctx.globalAlpha=0.4;
+  ctx.beginPath(); ctx.ellipse(hx-13,hy+22,5,3,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx+12,hy+22,5,3,0,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha=1;
+
+  // Smile C — filled crescent
+  ctx.fillStyle=MOUTH_DARK;
+  ctx.beginPath();
+  ctx.moveTo(hx-8, hy+23);
+  ctx.quadraticCurveTo(hx+1, hy+31, hx+9, hy+23);
+  ctx.quadraticCurveTo(hx+1, hy+27, hx-8, hy+23);
+  ctx.closePath(); ctx.fill();
+
+  ctx.restore();
+}
+
+// ── Brow variants ──────────────────────────────────────────────────────────
+
+function browCurrent(ctx, hx, hy) {
+  // Original — straight lines too close to eyes, same height (reads mad)
+  ctx.fillStyle = PAO.hairDark; ctx.globalAlpha = 1;
+  ctx.fillRect(hx-13, hy+10, 9, 2);
+  ctx.fillRect(hx-1,  hy+10, 10, 2);
+}
+
+function browA(ctx, hx, hy) {
+  // Gentle arch: inner end flat, outer end 1px higher → friendly tilt
+  ctx.fillStyle = PAO.hair; ctx.globalAlpha = 1; // slightly lighter — less harsh
+  // Left brow: inner (near nose) at hy+8, outer at hy+9
+  ctx.fillRect(hx-13, hy+8, 5, 2);  // inner part (higher)
+  ctx.fillRect(hx-8,  hy+9, 5, 2);  // outer drops 1px
+  // Right brow: inner at hy+8, outer at hy+9
+  ctx.fillRect(hx,    hy+8, 5, 2);  // inner (higher)
+  ctx.fillRect(hx+5,  hy+9, 5, 2);  // outer drops 1px
+}
+
+function browB(ctx, hx, hy) {
+  // Short + high: fewer pixels, more gap from eyes
+  ctx.fillStyle = PAO.hair; ctx.globalAlpha = 0.9;
+  ctx.fillRect(hx-11, hy+7, 8, 1.5); // left — short, thin, high
+  ctx.fillRect(hx+1,  hy+7, 8, 1.5); // right — same
+  ctx.globalAlpha = 1;
+}
+
+function browC(ctx, hx, hy) {
+  // Raised inner corners: inner pixel 1px higher → curious/open
+  ctx.fillStyle = PAO.hair; ctx.globalAlpha = 1;
+  // Left brow: inner corner raised
+  ctx.fillRect(hx-13, hy+7, 3, 2);  // inner (highest)
+  ctx.fillRect(hx-10, hy+8, 7, 2);  // outer (1px lower)
+  // Right brow: inner corner raised
+  ctx.fillRect(hx+1,  hy+8, 7, 2);  // inner side
+  ctx.fillRect(hx+8,  hy+7, 3, 2);  // inner corner raised (near nose bridge)
+}
+
+drawFace(document.getElementById('c0').getContext('2d'), browCurrent);
+drawFace(document.getElementById('cA').getContext('2d'), browA);
+drawFace(document.getElementById('cB').getContext('2d'), browB);
+drawFace(document.getElementById('cC').getContext('2d'), browC);
+
+function pick(el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+</script>
+</body>
+</html>

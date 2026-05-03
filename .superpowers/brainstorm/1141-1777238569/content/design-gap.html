@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Design: Fidelity Gap</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background:#13192b; color:#dde6ff; font-family:'Segoe UI',system-ui,sans-serif; padding:24px; }
+h2 { color:#ffd84d; font-size:20px; margin-bottom:4px; }
+.subtitle { color:#7a9abf; font-size:13px; margin-bottom:22px; }
+
+.three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:24px; }
+.panel { background:#0e1422; border:1px solid #1e2a40; border-radius:12px; padding:16px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.panel h3 { font-size:12px; text-transform:uppercase; letter-spacing:1px; padding-bottom:8px; border-bottom:1px solid #1e2a40; width:100%; text-align:center; }
+.panel.col-a h3 { color:#e05555; }
+.panel.col-b h3 { color:#4fc3d9; }
+.panel.col-ref h3 { color:#ffd84d; }
+canvas { border-radius:6px; background:#1e2d44; }
+
+.ref-card {
+  width:124px; height:200px; background:#1e2d44; border-radius:6px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; padding:12px;
+}
+.ref-item { display:flex; align-items:center; gap:6px; font-size:11px; color:#7a9abf; width:100%; }
+.dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+.key-gap {
+  background:#1a1a2e; border:1px solid #3a2a40; border-radius:8px;
+  padding:14px 18px; margin-bottom:20px;
+}
+.key-gap h3 { color:#f6a623; font-size:13px; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; }
+.gap-row { display:flex; gap:12px; margin-bottom:6px; align-items:flex-start; }
+.gap-icon { font-size:14px; min-width:20px; }
+.gap-text { font-size:13px; color:#8a9abf; line-height:1.5; }
+.gap-text strong { color:#dde6ff; }
+
+.options { display:flex; flex-direction:column; gap:10px; max-width:680px; margin:0 auto; }
+.option { display:flex; align-items:flex-start; gap:16px; background:#1a2236; border:2px solid #252f47; border-radius:10px; padding:14px 18px; cursor:pointer; transition:border-color 0.15s; }
+.option:hover { border-color:#4fc3d9; }
+.option.selected { border-color:#ffd84d; background:#212d48; }
+.opt-letter { font-weight:800; color:#4fc3d9; font-size:20px; min-width:26px; margin-top:1px; }
+.opt-title { color:#dde6ff; font-weight:600; font-size:15px; margin-bottom:3px; }
+.opt-desc { color:#7a9abf; font-size:13px; line-height:1.55; }
+.opt-badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; }
+.badge-rec { background:#1a3a28; color:#6dbf8a; }
+.badge-hard { background:#3a1a1a; color:#bf6d6d; }
+</style>
+</head>
+<body>
+
+<h2>The Fidelity Gap — What's Achievable?</h2>
+<p class="subtitle">You're right — proportions alone won't close the gap. Here's an honest picture of current vs best-achievable with code vs the reference.</p>
+
+<div class="three-col">
+  <div class="panel col-a">
+    <h3>Current — Code Drawn</h3>
+    <canvas id="cvsCurrent" width="124" height="160"></canvas>
+    <p style="font-size:11px;color:#557fa8;text-align:center">Squashed, no neck, braid clips, flat expression</p>
+  </div>
+  <div class="panel col-b">
+    <h3>Best Achievable — Code Drawn</h3>
+    <canvas id="cvsBest" width="124" height="160"></canvas>
+    <p style="font-size:11px;color:#4a8fbf;text-align:center">Correct proportions, expressive face, clear identity — but still geometric shapes</p>
+  </div>
+  <div class="panel col-ref">
+    <h3>Reference — Illustrated Art</h3>
+    <div class="ref-card">
+      <div class="ref-item"><div class="dot" style="background:#5a321d"></div>Flowing painted braids</div>
+      <div class="ref-item"><div class="dot" style="background:#c9855f"></div>Smooth skin shading</div>
+      <div class="ref-item"><div class="dot" style="background:#28573f"></div>Textured crop top</div>
+      <div class="ref-item"><div class="dot" style="background:#557fa8"></div>Detailed denim pants</div>
+      <div class="ref-item"><div class="dot" style="background:#f4e4c8"></div>Shell necklace detail</div>
+      <div class="ref-item"><div class="dot" style="background:#143d33"></div>Laced sneaker detail</div>
+      <div class="ref-item"><div class="dot" style="background:#ffd84d"></div>Gradient lighting/glow</div>
+    </div>
+    <p style="font-size:11px;color:#7a7a40;text-align:center">Hand-illustrated with gradients, texture, smooth curves</p>
+  </div>
+</div>
+
+<div class="key-gap">
+  <h3>What Code Drawing Can't Do</h3>
+  <div class="gap-row"><div class="gap-icon">❌</div><div class="gap-text"><strong>Smooth curves and gradients</strong> — Canvas shapes are geometric (ellipses, rects). The flowing illustrated curves in the braids and clothing need vector/image art.</div></div>
+  <div class="gap-row"><div class="gap-icon">❌</div><div class="gap-text"><strong>Painted lighting and shading</strong> — The reference uses soft colour gradients for skin, hair, and fabric. These can't be replicated with filled flat shapes.</div></div>
+  <div class="gap-row"><div class="gap-icon">✅</div><div class="gap-text"><strong>What code CAN do well</strong> — Correct proportions, readable colour identity (green top, blue jeans, brown braids), expressive pixel-style eyes, and a clearly recognisable silhouette. For a 16-bit-style game, this is the right target.</div></div>
+</div>
+
+<p style="color:#7a9abf;font-size:13px;margin-bottom:14px;text-align:center">So — which direction do you want to go?</p>
+
+<div class="options">
+  <div class="option" data-choice="improve-code" onclick="toggleOpt(this)">
+    <div class="opt-letter">A</div>
+    <div>
+      <div class="opt-title">Significantly improve the code-drawn sprite <span class="opt-badge badge-rec">Recommended for MVP</span></div>
+      <div class="opt-desc">Rewrite PaoSpriteFactory.ts with correct proportions, a more expressive face, better braids, visible shell necklace, and distinct pose expressions. It will look like a polished 16-bit game character, not the illustration — but clearly Pao.</div>
+    </div>
+  </div>
+  <div class="option" data-choice="png-sprites" onclick="toggleOpt(this)">
+    <div class="opt-letter">B</div>
+    <div>
+      <div class="opt-title">Switch to PNG sprite files <span class="opt-badge badge-hard">Requires new art</span></div>
+      <div class="opt-desc">Create actual pixel-art PNG sprites based on the reference and load them into Phaser as spritesheets. Much closer to the illustrated look — but requires creating the art files first (outside of code). The game spec planned this as a post-MVP step.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Palette ─────────────────────────────────────────────────────────────
+const PAO = {
+  outline:'#241713', skin:'#c9855f', skinLight:'#ffc493', cheek:'#e98f7d',
+  hairDark:'#2b1a12', hair:'#5a321d', hairLight:'#a5673c',
+  shirt:'#28573f', shirtLight:'#3f7656', denimDark:'#2f536f',
+  denim:'#557fa8', denimLight:'#8aaaca', belt:'#70482c', shoe:'#143d33', sole:'#f4ead0',
+};
+const C = { aqua:'#4fc3d9', cream:'#f4e4c8', gold:'#f6c35b', star:'#ffd84d', glow:'#fff3b0' };
+
+class G {
+  constructor(ctx) { this.c=ctx; this.fc='#000'; this.fa=1; this.sc='#000'; this.sa=1; this.sw=1; }
+  save(){this.c.save();} restore(){this.c.restore();}
+  scaleCanvas(sx,sy){this.c.scale(sx,sy);}
+  fillStyle(col,a=1){this.fc=typeof col==='number'?'#'+col.toString(16).padStart(6,'0'):col;this.fa=a;}
+  lineStyle(w,col,a=1){this.sc=typeof col==='number'?'#'+col.toString(16).padStart(6,'0'):col;this.sa=a;this.sw=w;}
+  _af(){this.c.fillStyle=this.fc;this.c.globalAlpha=this.fa;}
+  _as(){this.c.strokeStyle=this.sc;this.c.globalAlpha=this.sa;this.c.lineWidth=this.sw;}
+  fillEllipse(cx,cy,w,h){this._af();this.c.beginPath();this.c.ellipse(cx,cy,Math.abs(w/2),Math.abs(h/2),0,0,Math.PI*2);this.c.fill();}
+  fillRect(x,y,w,h){this._af();this.c.fillRect(x,y,w,h);}
+  fillRoundedRect(x,y,w,h,r){
+    this._af();const rr=Math.min(Math.abs(r),Math.abs(w)/2,Math.abs(h)/2);
+    this.c.beginPath();this.c.moveTo(x+rr,y);this.c.lineTo(x+w-rr,y);this.c.arcTo(x+w,y,x+w,y+rr,rr);
+    this.c.lineTo(x+w,y+h-rr);this.c.arcTo(x+w,y+h,x+w-rr,y+h,rr);
+    this.c.lineTo(x+rr,y+h);this.c.arcTo(x,y+h,x,y+h-rr,rr);
+    this.c.lineTo(x,y+rr);this.c.arcTo(x,y,x+rr,y,rr);this.c.closePath();this.c.fill();
+  }
+  fillCircle(cx,cy,r){this._af();this.c.beginPath();this.c.arc(cx,cy,Math.abs(r),0,Math.PI*2);this.c.fill();}
+  fillTriangle(x1,y1,x2,y2,x3,y3){this._af();this.c.beginPath();this.c.moveTo(x1,y1);this.c.lineTo(x2,y2);this.c.lineTo(x3,y3);this.c.closePath();this.c.fill();}
+  beginPath(){this.c.beginPath();} moveTo(x,y){this.c.moveTo(x,y);} lineTo(x,y){this.c.lineTo(x,y);}
+  strokePath(){this._as();this.c.stroke();}
+}
+
+// ─── CURRENT sprite (unchanged from PaoSpriteFactory) ────────────────────
+function drawCurrentIdle(canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const g = new G(ctx);
+  const ART_SCALE = 1.3;
+  const pose = 'idle-1';
+  const head = {x:55, y:25};
+  const torso = {x:47, y:51};
+  g.save(); g.scaleCanvas(ART_SCALE, ART_SCALE);
+  g.fillStyle(0x000000,0.18); g.fillEllipse(48,88,38,7);
+  // back braid
+  const pts = [{x:head.x-19,y:head.y+12,r:6},{x:head.x-24,y:head.y+24,r:6},{x:head.x-24,y:head.y+36,r:6},{x:head.x-20,y:head.y+48,r:5}];
+  g.fillStyle(PAO.hairDark,1); pts.forEach(p=>g.fillCircle(p.x,p.y,p.r));
+  g.fillStyle(PAO.hair,1); pts.forEach(p=>g.fillCircle(p.x+1,p.y-1,p.r-1));
+  // arms
+  g.lineStyle(7,PAO.outline,1); g.beginPath(); g.moveTo(torso.x-8,torso.y+2); g.lineTo(torso.x-15,torso.y+19); g.strokePath();
+  g.beginPath(); g.moveTo(torso.x+8,torso.y+2); g.lineTo(torso.x+12,torso.y+17); g.strokePath();
+  g.lineStyle(5,PAO.skin,1); g.beginPath(); g.moveTo(torso.x-8,torso.y+2); g.lineTo(torso.x-15,torso.y+19); g.strokePath();
+  g.beginPath(); g.moveTo(torso.x+8,torso.y+2); g.lineTo(torso.x+12,torso.y+17); g.strokePath();
+  // torso
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(torso.x-12,torso.y-4,25,25,4);
+  g.fillStyle(PAO.shirt,1); g.fillRoundedRect(torso.x-10,torso.y-3,21,22,3);
+  g.fillStyle(PAO.belt,1); g.fillRect(torso.x-12,torso.y+18,25,3);
+  // legs
+  const hipY = torso.y+20;
+  g.fillStyle(PAO.denimDark,1); g.fillRoundedRect(torso.x-11,hipY-2,24,8,2);
+  g.lineStyle(11,PAO.denim,1); g.beginPath(); g.moveTo(torso.x-7,hipY+2); g.lineTo(torso.x-7,hipY+15); g.lineTo(torso.x-9,84-5); g.strokePath();
+  g.beginPath(); g.moveTo(torso.x+7,hipY+2); g.lineTo(torso.x+8,hipY+15); g.lineTo(torso.x+9,85-5); g.strokePath();
+  // shoes
+  g.fillStyle(PAO.shoe,1); g.fillRoundedRect(torso.x-9-10,84-4,20,8,3);
+  g.fillRoundedRect(torso.x+9-10,85-4,20,8,3);
+  g.fillStyle(PAO.sole,1); g.fillRect(torso.x-9-11,84+2,22,3); g.fillRect(torso.x+9-11,85+2,22,3);
+  // head
+  g.fillStyle(PAO.hairDark,1); g.fillEllipse(head.x-9,head.y-2,38,19); g.fillEllipse(head.x-22,head.y+9,11,22);
+  g.fillStyle(PAO.hair,1); g.fillEllipse(head.x-9,head.y,33,15);
+  g.fillStyle(PAO.skin,1); g.fillRoundedRect(head.x-18,head.y+3,27,22,7);
+  g.fillStyle(PAO.hairDark,1); g.fillRect(head.x-14,head.y+10,9,2); g.fillRect(head.x-1,head.y+9,10,2);
+  g.fillStyle(0xf8f2e9,1); g.fillRoundedRect(head.x-13,head.y+13,7,5,2); g.fillRoundedRect(head.x,head.y+13,8,5,2);
+  g.fillStyle(0x17120f,1); g.fillRect(head.x-10,head.y+14,3,3); g.fillRect(head.x+3,head.y+14,3,3);
+  g.fillStyle(0x702528,1); g.fillRect(head.x-2,head.y+23,8,2);
+  // front braid
+  const bx=head.x+6, by=head.y+25;
+  g.fillStyle(PAO.hairDark,1); g.fillCircle(bx,by,5); g.fillCircle(bx+1,by+10,5); g.fillCircle(bx,by+20,4);
+  g.fillStyle(PAO.hair,1); g.fillCircle(bx+1,by-1,4); g.fillCircle(bx+2,by+9,4);
+  g.restore();
+}
+
+// ─── BEST ACHIEVABLE — improved code sprite ───────────────────────────────
+function drawBestIdle(canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const g = new G(ctx);
+
+  // Improved layout: taller, better proportioned, more expressive
+  // Working in raw pixels at 1:1 scale on 124×160 canvas
+  const cx = 62; // horizontal centre
+
+  // Drop shadow
+  g.fillStyle('#000000',0.15); g.fillEllipse(cx, 148, 44, 8);
+
+  // ── Back braid (stays in frame, longer) ──────────────────────────────
+  const braidX = cx - 16;
+  [[braidX,55,7],[braidX-2,69,7],[braidX,83,6],[braidX+1,96,6],[braidX-1,109,5]].forEach(([x,y,r])=>{
+    g.fillStyle(PAO.hairDark,1); g.fillCircle(x,y,r);
+    g.fillStyle(PAO.hair,1); g.fillCircle(x+1,y-1,r-2);
+    g.fillStyle(PAO.hairLight,0.6); g.fillCircle(x+1,y-2,r-4);
+  });
+  g.fillStyle(C.aqua,1); g.fillRect(braidX-4,111,8,4);
+
+  // ── Left arm ─────────────────────────────────────────────────────────
+  g.lineStyle(9,PAO.outline,1); g.beginPath(); g.moveTo(cx-10,82); g.lineTo(cx-20,106); g.strokePath();
+  g.lineStyle(7,PAO.skin,1);   g.beginPath(); g.moveTo(cx-10,82); g.lineTo(cx-20,106); g.strokePath();
+  g.lineStyle(7,PAO.shirt,1);  g.beginPath(); g.moveTo(cx-10,82); g.lineTo(cx-16,90); g.strokePath();
+  g.fillStyle(PAO.skin,1); g.fillCircle(cx-20,106,5);
+  g.fillStyle(C.aqua,1); g.fillCircle(cx-19,104,3); // bracelet
+
+  // ── Right arm ────────────────────────────────────────────────────────
+  g.lineStyle(9,PAO.outline,1); g.beginPath(); g.moveTo(cx+10,82); g.lineTo(cx+18,105); g.strokePath();
+  g.lineStyle(7,PAO.skin,1);   g.beginPath(); g.moveTo(cx+10,82); g.lineTo(cx+18,105); g.strokePath();
+  g.lineStyle(7,PAO.shirt,1);  g.beginPath(); g.moveTo(cx+10,82); g.lineTo(cx+16,90); g.strokePath();
+  g.fillStyle(PAO.skin,1); g.fillCircle(cx+18,105,5);
+
+  // ── Torso ─────────────────────────────────────────────────────────────
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(cx-16,76,32,30,5);
+  g.fillStyle(PAO.shirt,1);   g.fillRoundedRect(cx-14,77,28,27,4);
+  g.fillStyle(PAO.shirtLight,1); g.fillRect(cx-8,81,16,5);  // shirt highlight stripe
+  // midriff strip (shows between shirt hem and belt)
+  g.fillStyle(PAO.skinLight,1); g.fillRect(cx-13,101,26,4);
+  // shell necklace
+  g.fillStyle(C.cream,1); g.fillCircle(cx+2,88,5); g.fillRect(cx+1,91,3,6);
+  g.fillStyle(PAO.outline,0.5); g.fillCircle(cx+2,88,5);
+  // belt
+  g.fillStyle(PAO.belt,1); g.fillRect(cx-15,104,30,5);
+  g.fillStyle(C.gold,1); g.fillRect(cx-2,104,7,5); // buckle
+
+  // ── Legs ──────────────────────────────────────────────────────────────
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(cx-16,108,34,11,3);
+  g.fillStyle(PAO.denimDark,1); g.fillRoundedRect(cx-14,109,30,9,2);
+
+  // left leg
+  g.lineStyle(16,PAO.outline,1); g.beginPath(); g.moveTo(cx-8,117); g.lineTo(cx-12,134); g.lineTo(cx-14,143); g.strokePath();
+  g.lineStyle(13,PAO.denim,1);   g.beginPath(); g.moveTo(cx-8,117); g.lineTo(cx-12,134); g.lineTo(cx-14,143); g.strokePath();
+  g.lineStyle(3,PAO.denimLight,0.7); g.beginPath(); g.moveTo(cx-7,119); g.lineTo(cx-10,131); g.strokePath();
+  g.fillStyle(PAO.denimDark,1); g.fillRoundedRect(cx-18,130,14,9,2);
+
+  // right leg
+  g.lineStyle(16,PAO.outline,1); g.beginPath(); g.moveTo(cx+8,117); g.lineTo(cx+14,134); g.lineTo(cx+16,143); g.strokePath();
+  g.lineStyle(13,PAO.denim,1);   g.beginPath(); g.moveTo(cx+8,117); g.lineTo(cx+14,134); g.lineTo(cx+16,143); g.strokePath();
+  g.lineStyle(3,PAO.denimLight,0.7); g.beginPath(); g.moveTo(cx+9,119); g.lineTo(cx+13,131); g.strokePath();
+  g.fillStyle(PAO.denimDark,1); g.fillRoundedRect(cx+5,130,14,9,2);
+
+  // ── Shoes ─────────────────────────────────────────────────────────────
+  // left
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(cx-26,140,22,10,3);
+  g.fillStyle(PAO.shoe,1);    g.fillRoundedRect(cx-25,137,20,10,3);
+  g.fillStyle(PAO.sole,1);    g.fillRect(cx-26,147,22,4);
+  g.fillStyle(C.star,1);      g.fillRect(cx-20,139,4,4); // star detail
+  g.fillStyle(PAO.sole,0.8);  g.fillRect(cx-14,139,6,3);
+  // right
+  g.fillStyle(PAO.outline,1); g.fillRoundedRect(cx+4,140,22,10,3);
+  g.fillStyle(PAO.shoe,1);    g.fillRoundedRect(cx+5,137,20,10,3);
+  g.fillStyle(PAO.sole,1);    g.fillRect(cx+4,147,22,4);
+  g.fillStyle(C.star,1);      g.fillRect(cx+8,139,4,4);
+  g.fillStyle(PAO.sole,0.8);  g.fillRect(cx+14,139,6,3);
+
+  // ── Head ──────────────────────────────────────────────────────────────
+  const hx=cx+4, hy=28;
+  // hair outline + top
+  g.fillStyle(PAO.outline,1); g.fillEllipse(hx-4,hy+2,42,36);
+  g.fillStyle(PAO.hairDark,1); g.fillEllipse(hx-4,hy-4,44,22);
+  g.fillEllipse(hx-20,hy+8,13,28); // left side hair
+  g.fillEllipse(hx+13,hy+7,11,24); // right side hair
+  g.fillStyle(PAO.hair,1); g.fillEllipse(hx-4,hy-2,38,18);
+  g.fillEllipse(hx-20,hy+9,9,22);
+  g.fillEllipse(hx+13,hy+8,8,20);
+  // hair highlight
+  g.fillStyle(PAO.hairLight,1); g.fillRect(hx-12,hy-8,12,3); g.fillRect(hx+2,hy-7,10,3);
+  // face skin
+  g.fillStyle(PAO.skin,1); g.fillRoundedRect(hx-20,hy+4,32,26,8);
+  g.fillTriangle(hx+9,hy+10,hx+18,hy+14,hx+9,hy+18); // ear
+  g.fillRoundedRect(hx-25,hy+12,6,10,3); // left ear
+  g.fillStyle(PAO.skinLight,1); g.fillRect(hx-14,hy+6,18,6); // face highlight
+  // eyebrows — determined
+  g.fillStyle(PAO.hairDark,1);
+  g.fillRect(hx-16,hy+12,11,2); // left brow (angled — inner raised)
+  g.fillRect(hx-2,hy+11,12,2);  // right brow
+  // eyes — larger, more expressive
+  g.fillStyle(0xffffff,1); g.fillRoundedRect(hx-15,hy+15,9,7,2);
+  g.fillRoundedRect(hx-1,hy+15,10,7,2);
+  g.fillStyle(0x3a2010,1); g.fillCircle(hx-11,hy+18,3); g.fillCircle(hx+4,hy+18,3);
+  g.fillStyle(0x000000,1); g.fillCircle(hx-11,hy+18,2); g.fillCircle(hx+4,hy+18,2);
+  g.fillStyle(0xffffff,1); g.fillRect(hx-12,hy+16,2,2); g.fillRect(hx+3,hy+16,2,2); // sparkle
+  // lashes (top of eye — small strokes)
+  g.lineStyle(1,PAO.hairDark,0.9);
+  g.beginPath(); g.moveTo(hx-14,hy+15); g.lineTo(hx-16,hy+13); g.strokePath();
+  g.beginPath(); g.moveTo(hx-11,hy+15); g.lineTo(hx-11,hy+13); g.strokePath();
+  g.beginPath(); g.moveTo(hx-8,hy+15); g.lineTo(hx-6,hy+13); g.strokePath();
+  g.beginPath(); g.moveTo(hx-1,hy+15); g.lineTo(hx-2,hy+13); g.strokePath();
+  g.beginPath(); g.moveTo(hx+2,hy+15); g.lineTo(hx+2,hy+13); g.strokePath();
+  g.beginPath(); g.moveTo(hx+6,hy+15); g.lineTo(hx+7,hy+13); g.strokePath();
+  g.beginPath(); g.moveTo(hx+9,hy+15); g.lineTo(hx+10,hy+13); g.strokePath();
+  // nose
+  g.fillStyle(PAO.skinLight,0.7); g.fillRect(hx-1,hy+20,3,2);
+  // cheeks
+  g.fillStyle(PAO.cheek,0.45); g.fillEllipse(hx-16,hy+23,10,5); g.fillEllipse(hx+11,hy+23,10,5);
+  // mouth — confident closed smile
+  g.fillStyle(0x6a2024,1); g.fillRoundedRect(hx-4,hy+24,12,3,2);
+  g.fillStyle(0xffffff,1); g.fillRect(hx-2,hy+24,7,1);
+
+  // ── Neck ──────────────────────────────────────────────────────────────
+  g.fillStyle(PAO.outline,1); g.fillRect(cx-5,52,10,8);
+  g.fillStyle(PAO.skin,1); g.fillRect(cx-3,52,8,8);
+
+  // ── Front braid ───────────────────────────────────────────────────────
+  const fbx=hx+11, fby=hy+28;
+  g.fillStyle(PAO.hairDark,1);
+  g.fillCircle(fbx,fby,6); g.fillCircle(fbx+1,fby+12,6); g.fillCircle(fbx,fby+24,5); g.fillCircle(fbx+1,fby+35,4);
+  g.fillStyle(PAO.hair,1);
+  g.fillCircle(fbx+1,fby-1,4); g.fillCircle(fbx+2,fby+11,4); g.fillCircle(fbx+1,fby+23,3);
+  g.fillStyle(PAO.hairLight,0.5); g.fillCircle(fbx+2,fby,2); g.fillCircle(fbx+2,fby+11,2);
+  g.fillStyle(C.aqua,1); g.fillRect(fbx-3,fby+32,8,4);
+}
+
+drawCurrentIdle(document.getElementById('cvsCurrent'));
+drawBestIdle(document.getElementById('cvsBest'));
+
+const selected = new Set();
+function toggleOpt(el) {
+  const c = el.dataset.choice;
+  if (selected.has(c)) { selected.delete(c); el.classList.remove('selected'); }
+  else { selected.add(c); el.classList.add('selected'); }
+}
+</script>
+</body>
+</html>
